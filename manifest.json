@@ -3,7 +3,7 @@
 
   "name": "imageGetter",
   "description": "Get the direct original link in search pages.",
-  "version": "1.0",
+  "version": "1.1",
   "author": "jim60105",
   "background": { "scripts": ["background.js"] },
   "content_scripts":[{
