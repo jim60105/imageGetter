@@ -29,65 +29,79 @@ function getDomainFromUrl(url){
 
 var openList = new Array();
 var clickList = new Array();
-
+var sum = 0;
 function pushClickList(){
-    var url = this.parentNode.parentNode.parentNode.children[0].href;
-    var btn = this;
-    var a = this.parentNode.children[1];
-    clickList.push([url,btn,a]);
+    clickList.push(this);
     if (typeof tt!=='undefined') {
-        clearInterval(tt);
+        clearTimeout(tt);
     }
-    tt = setInterval(function(){
+    tt = setTimeout(function(){
         click();
-        clearInterval(tt);
     },2000);
+    sum = clickList.length;
 }
 
+var times = 0;
 function click(){
-    while(clickList.length!=0){
-        pushToArray(clickList.shift(),click());
+    if(clickList.length!=0){
+        pushToArray(clickList.shift(),click);
     }
 }
 
-function pushToArray([url,btn,a],callback) {
-    $.get(url,function(data){
+function pushToArray(ele,callback) {
+    var url = ele.parentNode.parentNode.parentNode.children[0].href;
+    var btn = ele;
+    var a = ele.parentNode.children[1];
+    $.ajax({
+        method: "GET",
+        url: url,
+        cache: false,
+        header: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Referer': ele.baseURI,
+            'Upgrade-Insecure-Requests':1,
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/50.0.2661.102 Chrome/50.0.2661.102 Safari/537.36'
+        }
+    }).done(function(data){
         PageContent = data;
         //將取得結果解析至網頁中
         var img=$(PageContent).find("a#highres")[0].href;
         a.href = img;
         a.style.display = "";
         btn.style.display = "none";
-        (callback && typeof(callback) === "function") && callback();
-        openList.push(img);
 
-        if (typeof t!=='undefined') {
-            clearInterval(t);
+        setTimeout(function(){
+            (callback && typeof(callback) === "function") && callback();
+        },700);
+        openList.push(img);
+        times++;
+        if (times==sum) {
+            setTimeout(function(){
+                openTab();
+            },1800);
         }
-        if (typeof t1!=='undefined') {
-            clearInterval(t1);
-        }
-        t = setInterval(function(){
-            openNewBackgroundTab(openList.shift());
-            clearInterval(t);
-            if (openList.length!=0) {
-                t1 = setInterval(function(){
-                    openNewBackgroundTab(openList.shift());
-                    if (openList.length==0) {
-                        clearInterval(t1);
-                    }
-                },500);
-            }
-        },2000);
+    }).fail(function(){
+        clickList.push(ele);
+        setTimeout(function(){
+            click();
+        },1000);
     });
 }
 
-function openNewBackgroundTab(url){
-    var a = document.createElement("a");
-    a.href = url; 
-    var evt = document.createEvent("MouseEvents");
-    //the tenth parameter of initMouseEvent sets ctrl key
-    evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0,
-                       true, false, false, false, 0, null);
-                       a.dispatchEvent(evt);
+function openTab(){
+    if(openList.length!=0) {
+        openNewBackgroundTab(openList.shift(),openTab);
+    }
+}
+
+function openNewBackgroundTab(url,callback){
+        var a = document.createElement("a");
+        a.href = url; 
+        var evt = document.createEvent("MouseEvents");
+        //the tenth parameter of initMouseEvent sets ctrl key
+        evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, true, false, false, false, 0, null);
+        a.dispatchEvent(evt);
+    setTimeout(function(){
+        (callback && typeof(callback) === "function") && callback();
+    },500);
 }
